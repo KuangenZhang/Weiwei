@@ -110,8 +110,8 @@ def main():
     train_loader, test_loader, train_dataset, test_dataset = split_data()
     model = Net().to(device)
 
-    isTrain = True
-    if (isTrain):
+    is_train = False
+    if is_train:
         optimizer = optim.Adam(model.parameters(), lr=lr)
         best_acc_test = 0
         for epoch in tqdm(range(epochs)):
@@ -122,13 +122,17 @@ def main():
                 print('Training accuracy : {:.2f}%, test accuracy: {:.2f}%'.format(acc_train * 100, acc_test * 100))
                 best_acc_test = acc_test
                 torch.save(model.state_dict(), "net.pt")
+
     model.load_state_dict(torch.load("net.pt"))
     acc_test, y, y_pred = test(model, test_loader)
     plot_comfusion_matrix(y, y_pred)
     print('Final test accuracy: {:.2f}%'.format(acc_test * 100))
 
+
 def plot_comfusion_matrix(y, y_pred):
     cf_mat = confusion_matrix(y, y_pred)
+    cf_mat_sum = np.sum(cf_mat, axis=-1, keepdims=True)
+    cf_mat = cf_mat/cf_mat_sum
     print(cf_mat)
 
 
