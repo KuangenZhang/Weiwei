@@ -1,3 +1,4 @@
+*.idea*
 *.npy
 *.pt
 # Byte-compiled / optimized / DLL files

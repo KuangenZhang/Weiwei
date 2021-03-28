@@ -81,7 +81,9 @@ def test(model, test_loader):
             y_list.append(y)
             y_pred_list.append(y_pred)
     y = torch.cat(y_list, dim=0).cpu().detach().numpy()
-    y_pred = torch.cat(y_pred_list, dim=0).cpu().detach().numpy()
+    y_pred = torch.cat(y_pred_list, dim=0).cpu().detach().numpy().squeeze()
+    # print('y_size: {}, {}, {}'.format(len(y), y.shape, y_pred.shape))
+    # print('accuracy: {}'.format(np.mean(y_pred == y)))
     acc = correct / len(y)
     return acc, y, y_pred
 
@@ -91,6 +93,7 @@ def split_data(batch_size=128):
     X = data['Images']
     y = data['classes']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    print('Initial y_size: {}'.format(len(y_test)))
     data_loader_train = torch.utils.data.DataLoader(
         Dataset(X_train, y_train),
         batch_size=batch_size,
@@ -99,7 +102,7 @@ def split_data(batch_size=128):
     data_loader_test = torch.utils.data.DataLoader(
         Dataset(X_test, y_test),
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=0)
     return data_loader_train, data_loader_test, (X_train, y_train), (X_test, y_test)
 
@@ -110,7 +113,7 @@ def main():
     train_loader, test_loader, train_dataset, test_dataset = split_data()
     model = Net().to(device)
 
-    is_train = False
+    is_train = True
     if is_train:
         optimizer = optim.Adam(model.parameters(), lr=lr)
         best_acc_test = 0
@@ -118,8 +121,8 @@ def main():
             train(model, train_loader, optimizer, epoch)
             acc_train, _, _ = test(model, train_loader)
             acc_test, _, _ = test(model, test_loader)
+            print('Training accuracy : {:.2f}%, test accuracy: {:.2f}%'.format(acc_train * 100, acc_test * 100))
             if acc_test > best_acc_test:
-                print('Training accuracy : {:.2f}%, test accuracy: {:.2f}%'.format(acc_train * 100, acc_test * 100))
                 best_acc_test = acc_test
                 torch.save(model.state_dict(), "net.pt")
 
