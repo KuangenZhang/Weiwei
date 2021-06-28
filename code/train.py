@@ -4,6 +4,7 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np 
 from losses import *
+import torchvision.transforms as transforms
 import torch.nn.functional as F
 
 def train_rg(model, train_loader, optimizer, loss_fn):
@@ -15,10 +16,14 @@ def train_rg(model, train_loader, optimizer, loss_fn):
         # print(label.shape)
         optimizer.zero_grad()
         data = Variable(data.float().to(device))
+        pred_1 = model(data)
+        data = randomly_transform_imgs(data)
+
         label = Variable((label).float().to(device))
         pred = model(data)
         # loss = loss_fn(pred, label)
-        loss = torch.mean(torch.relu(torch.abs((pred - label) / label) - 0.2))
+        loss = torch.sum(torch.relu(torch.abs((pred - label) / label) - 0.1)) + \
+               torch.sum(torch.relu(torch.abs((pred_1 - label) / label) - 0.1))
         # loss = -torch.mean(torch.float(torch.abs((pred - label) / label) <= 0.2))
         # loss = -np.mean(np.abs((pred - label) / label) <= 0.2)
         loss.backward()
@@ -35,3 +40,12 @@ def train_rg(model, train_loader, optimizer, loss_fn):
 
 
     # return loss_p
+
+def randomly_transform_imgs(imgs):
+    imgs = imgs * (1 - 5e-2 + Variable(1e-1 * torch.rand(imgs.shape).float().to(device)))
+    img_trans = torch.nn.Sequential(
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomRotation(degrees=45),
+        transforms.RandomVerticalFlip(p=0.5))
+    return img_trans(imgs)
+

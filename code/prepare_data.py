@@ -88,24 +88,31 @@ def split_data(datafile, batch_size, phase_norm, ros_norm, train_phase, trans=No
         ros_level= np.tanh((0.1 * (ros_level - r_mean) / r_std ) - (0.1 * (rmin - r_mean) / r_std))
 
     ros_level = np.expand_dims(ros_level, axis=-1)
-    phase_img = np.expand_dims(phase_img, axis = 1) 
-    
+    phase_img = np.expand_dims(phase_img, axis = 1)
 
-    if train_phase == 'train':
-        np.random.seed(0)
-        index_tr = np.random.choice(len(condition), int(0.8 * len(condition)), replace=False)
-        index_te = [e for e in range(len(condition)) if e not in index_tr]
-        train_dataset = Dataset(phase_img[index_tr], ros_level[index_tr], classes[index_tr], condition[index_tr], transform_p = trans, transform_i = trans_i)
-        test_dataset = Dataset(phase_img[index_te],  ros_level[index_te], classes[index_te], condition[index_te], transform_i = trans_i)
+    np.random.seed(0)
+    index_vec = np.arange(len(condition))
+    np.random.shuffle(index_vec)
+    tr_idx = int(0.8 * len(condition))
+    index_tr = index_vec[:tr_idx]
+    index_te = index_vec[tr_idx:]
+    # index_tr = np.random.choice(len(condition), int(0.8 * len(condition)), replace=False)
+    # index_te = [e for e in range(len(condition)) if e not in index_tr]
+    train_dataset = Dataset(phase_img[index_tr], ros_level[index_tr], classes[index_tr], condition[index_tr],
+                            transform_p=trans, transform_i=trans_i)
+    test_dataset = Dataset(phase_img[index_te], ros_level[index_te], classes[index_te], condition[index_te],
+                           transform_i=trans_i)
 
-        print('Train size: {:d}% Test size: {:d}%'.format(len(index_tr), len(index_te)))
-        data_loader_train = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        data_loader_test = data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
-        data_prepared = {'data_loader_train': data_loader_train, 'data_loader_test': data_loader_test, 'train_dataset': train_dataset, 'test_dataset': test_dataset}
-
-    else: 
-        train_dataset = Dataset(phase_img, ros_level, classes, condition, transform_i = trans_i)
-        data_loader_train = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        data_prepared = {'data_loader_test': data_loader_train,'test_dataset': train_dataset}
-
+    print('Train size: {:d}% Test size: {:d}%'.format(len(index_tr), len(index_te)))
+    data_loader_train = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    data_loader_test = data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    data_prepared = {'data_loader_train': data_loader_train, 'data_loader_test': data_loader_test,
+                     'train_dataset': train_dataset, 'test_dataset': test_dataset}
+    np.save('data/data_prepared.npy', data_prepared)
+    # if train_phase == 'train':
+    #
+    # else:
+    #     train_dataset = Dataset(phase_img, ros_level, classes, condition, transform_i = trans_i)
+    #     data_loader_train = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    #     data_prepared = {'data_loader_test': data_loader_train,'test_dataset': train_dataset}
     return data_prepared

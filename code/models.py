@@ -12,28 +12,45 @@ class SimpleModel(nn.Module):
     def __init__(self):
         super(SimpleModel, self).__init__()
         '''2D CNN'''
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(2, 2))
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1))
         self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 128, kernel_size=(3, 3), stride=(2, 2))
+        self.conv2 = nn.Conv2d(32, 128, kernel_size=(3, 3), stride=(1, 1))
         self.bn2 = nn.BatchNorm2d(128)
-        self.conv3 = nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2))
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
         self.bn3 = nn.BatchNorm2d(256)
-        self.conv4 = nn.Conv2d(256, 64, kernel_size=(3, 3), stride=(2, 2))
-        self.bn4 = nn.BatchNorm2d(64)
-        self.conv5 = nn.Conv2d(64, 1, kernel_size=(3, 3), stride=(2, 2))
-        self.bn5 = nn.BatchNorm2d(1)
+        self.conv4 = nn.Conv2d(256, 1024, kernel_size=(3, 3), stride=(1, 1))
+        self.bn4 = nn.BatchNorm2d(1024)
+        self.conv5 = nn.Conv2d(1024, 2048, kernel_size=(2, 2), stride=(1, 1))
+        self.bn5 = nn.BatchNorm2d(2048)
+        self.maxPool = nn.MaxPool2d((2,2))
+        self.dropout = nn.Dropout2d(p=0.2)
         # self.conv6 = nn.Conv2d(16, 1, kernel_size=(1, 1))
         # self.bn6 = nn.BatchNorm2d(1)
+
+        self.fc1 = nn.Linear(2048, 512)
+        self.fc_bn1 = nn.BatchNorm1d(512)
+        self.fc2 = nn.Linear(512, 64)
+        self.fc_bn2 = nn.BatchNorm1d(64)
+        self.fc3 = nn.Linear(64, 1)
 
 
     def forward(self, x):
         '''2D CNN'''
-        x = F.relu6(self.bn1(self.conv1(x)))
-        x = F.relu6(self.bn2(self.conv2(x)))
-        x = F.relu6(self.bn3(self.conv3(x)))
-        x = F.relu6(self.bn4(self.conv4(x)))
-        x = self.conv5(x)
+        x = self.maxPool(F.relu(self.bn1(self.conv1(x))))
+        x = self.maxPool(F.relu(self.bn2(self.conv2(x))))
+        x = self.maxPool(F.relu(self.bn3(self.conv3(x))))
+        x = self.maxPool(F.relu(self.bn4(self.conv4(x))))
+        x = F.relu(self.bn5(self.conv5(x)))
+        # x4 = x.view(x.size(0), -1)
+        # x = torch.cat([x1,x2,x3,x4],dim=-1)
+        x = torch.max(torch.max(x, dim=-1)[0], dim=-1)[0]
         x = x.view(x.size(0), -1)
+        # print(x.shape)
+        x = self.dropout(x)
+        x = F.relu6(self.fc_bn1(self.fc1(x)))
+        x = self.dropout(x)
+        x = F.relu6(self.fc_bn2(self.fc2(x)))
+        x = self.fc3(x)
         return x
 
 
